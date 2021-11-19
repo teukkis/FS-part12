@@ -1,0 +1,12 @@
+docker exec -it a7 redis-cli
+KEYS *
+  1) "added_todos"
+  2) "numero"
+
+GET added_todos
+  "2"
+INCRBY 8999
+  (integer) 9001
+
+DEL added_todos
+  (integer) 1
