@@ -16,11 +16,22 @@ services:
   redis:
     image: redis:6.2
     ports:
-     - "6379:6379"
+     - 6379:6379
 
     volumes:
       - ./todo_backend/redis_data:/var/lib/redis
     command: ['redis-server', '--appendonly', 'yes'] 
+
+  client:
+    image: hello-front-dev
+    build:
+      context: ./todo-frontend
+      dockerfile: dev.Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - ./todo-frontend:/usr/src/app
+    container_name: hello-front-dev 
 
 volumes:
   mongo_data:
