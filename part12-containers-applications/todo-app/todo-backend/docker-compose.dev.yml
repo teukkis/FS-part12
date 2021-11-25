@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  server:
+    image: backend-dev
+    container_name: backend-dev
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    ports:
+      - 3001:3001
+    volumes:
+      - ./:/usr/src/app/
+    environment:
+      - PORT=3001
+      - REDIS_URL=redis://redis:6379
+      - MONGO_URL=mongodb://the_username:the_password@mongodb:27017/the_database
+    depends_on:
+      - mongodb
+      - redis
+
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: the_database
+    volumes:
+      - ./mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+      - ./mongo_data:/data/db
+
+  redis:
+    image: redis:6.2
+    container_name: redis
+    ports:
+     - 6379:6379
+
+    volumes:
+      - ./redis_data:/var/lib/redis
+    command: ['redis-server', '--appendonly', 'yes'] 
