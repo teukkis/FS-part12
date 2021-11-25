@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:1.20.1
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 8054:80
+    container_name: meet-reverse-proxy
+    depends_on:
+      - server
+      
+  server:
+    image: meet-backend-dev
+    container_name: meet-backend
+    build:
+      context: ./backend
+      dockerfile: dev.Dockerfile
+    ports:
+      - 3001:3001
+    volumes:
+      - ./backend:/usr/src/app
+    environment:
+      - PORT=3001
+      - MONGODB_URI=mongodb://name:passwo@mongodb:27017/databaser
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo
+    container_name: meet-mongodb
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: databaser
+    volumes:
+      - ./backend/src/db/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+      - ./backend/src/db/mongo_data:/data/db
+
+  client:
+    image: meet-client-dev
+    build:
+      context: ./frontend
+      dockerfile: dev.Dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      - REACT_APP_BASE_URL=http://localhost
+      - REACT_APP_API_VERSION=api
+      - REACT_APP_PORT=8054
+    volumes:
+      - ./frontend:/usr/src/app
+    container_name: meet-client
+  
+  debug-helper:
+    image: busybox
