@@ -1,33 +1,53 @@
-version: "3"
+version: '3.8'
+
 services:
-    client:
-      container_name: app
-      build:
-        context: ./frontend
-      ports:
-        - '80:80'
-      environment:
-        - NODE_ENV=production
-
-    server:
-      build:
-        context: ./backend
-      ports:
-          - "8111:8111"
-      environment:
-        - NODE_ENV=production
-      depends_on:
-          - mongo
+  nginx:
+    image: nginx:1.20.1
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 80:80
+    container_name: meet-reverse-proxy
+    depends_on:
+      - server
       
-    mongo:
-        image: mongo:latest
-        restart: always
-        container_name: mongodb
-        volumes:
-          - mongodb-data:/data/db
-        ports:
-            - 27017:27017
-        command: mongod --noauth
+  server:
+    image: meet-server
+    container_name: meet-server
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 3001:3001
+    environment:
+      - PORT=3001
+      - MONGODB_URI=mongodb://name:passwo@mongodb:27017/databaser
+    depends_on:
+      - mongodb
 
-volumes:
-  mongodb-data:
+  mongodb:
+    image: mongo
+    container_name: meet-mongodb
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: databaser
+    volumes:
+      - ./backend/src/db/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+      - ./backend/src/db/mongo_data:/data/db
+
+  client:
+    image: meet-client
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - REACT_APP_BASE_URL=http://localhost
+      - REACT_APP_API_VERSION=api
+      - REACT_APP_PORT=80
+    container_name: meet-client
+  
+  debug-helper:
+    image: busybox
